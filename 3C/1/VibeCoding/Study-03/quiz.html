@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>상식의 달인</title>
+    <style>
+        /* CSS 변수 설정 (라이트/다크 테마 색상 정의) */
+        :root {
+            --bg-color: #f4f6f9;
+            --container-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --btn-bg: #f1f5f9;
+            --btn-hover: #e2e8f0;
+            --btn-primary: #4361ee;
+            --btn-primary-hover: #3a53d0;
+            --input-border: #e2e8f0;
+            --input-bg: #ffffff;
+            --list-border: #f1f5f9;
+            --rank1-bg: #fffbeb;
+            --rank2-bg: #f8fafc;
+            --rank3-bg: #fff7ed;
+        }
+
+        /* 다크 모드 변수 */
+        body.dark-mode {
+            --bg-color: #0f172a;
+            --container-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --btn-bg: #334155;
+            --btn-hover: #475569;
+            --btn-primary: #4361ee; 
+            --btn-primary-hover: #3a53d0;
+            --input-border: #475569;
+            --input-bg: #0f172a;
+            --list-border: #334155;
+            --rank1-bg: #422006; /* 어두운 황금색 배경 */
+            --rank2-bg: #334155;
+            --rank3-bg: #3f1d0b;
+        }
+
+        /* 기본 스타일 세팅 */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', -apple-system, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; transition: background-color 0.3s ease; }
+        #app-container { width: 100%; max-width: 480px; background: var(--container-bg); min-height: 600px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; position: relative; display: flex; flex-direction: column; transition: background-color 0.3s ease; }
+        
+        /* 테마 토글 버튼 */
+        .theme-btn { position: absolute; top: 20px; right: 20px; background: var(--btn-bg); color: var(--text-main); border: none; padding: 8px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 10; transition: all 0.2s ease; }
+        .theme-btn:hover { background: var(--btn-hover); }
+
+        /* 화면 전환 처리 */
+        .screen { display: none; padding: 30px; flex-direction: column; align-items: center; justify-content: center; height: 100%; flex-grow: 1; }
+        .screen.active { display: flex; }
+
+        /* 공통 UI 요소 */
+        h1 { font-size: 26px; margin-bottom: 20px; color: var(--text-main); text-align: center; }
+        h2 { font-size: 20px; margin-bottom: 15px; color: var(--text-sub); }
+        .btn { width: 100%; padding: 16px; margin-bottom: 10px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; background-color: var(--btn-bg); color: var(--text-main); word-break: keep-all; }
+        .btn-primary { background-color: var(--btn-primary); color: white; }
+        .btn-primary:hover { background-color: var(--btn-primary-hover); }
+        
+        /* 홈 화면 카테고리 그리드 */
+        .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-bottom: 20px; }
+        .category-grid .btn { margin-bottom: 0; padding: 20px 10px; font-size: 18px; }
+
+        /* 퀴즈 화면 전용 */
+        #top-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; color: var(--text-sub); font-size: 14px; }
+        #progress-container { width: 100%; height: 8px; background-color: var(--btn-bg); border-radius: 4px; margin-bottom: 30px; overflow: hidden; }
+        #progress-bar { height: 100%; background-color: var(--btn-primary); width: 0%; transition: width 0.3s ease; }
+        #question-text { font-size: 20px; line-height: 1.5; margin-bottom: 30px; text-align: center; word-break: keep-all; font-weight: bold; color: var(--text-main); min-height: 60px; }
+        .option-btn:hover { background-color: var(--btn-hover); }
+        .option-btn:disabled { cursor: not-allowed; }
+        
+        /* 피드백 색상 (다크모드에서도 동일하게 유지) */
+        .correct { background-color: #10b981 !important; color: white !important; }
+        .incorrect { background-color: #ef4444 !important; color: white !important; }
+
+        /* 결과 및 리더보드 */
+        .score-display { font-size: 40px; font-weight: bold; color: var(--btn-primary); margin-bottom: 20px; }
+        input[type="text"] { width: 100%; padding: 16px; border: 2px solid var(--input-border); background-color: var(--input-bg); color: var(--text-main); border-radius: 12px; font-size: 16px; margin-bottom: 20px; text-align: center; outline: none; transition: all 0.3s ease; }
+        input[type="text"]:focus { border-color: var(--btn-primary); }
+        .leaderboard-list { width: 100%; list-style: none; margin-bottom: 20px; max-height: 350px; overflow-y: auto; padding: 0; }
+        .leaderboard-item { display: flex; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--list-border); font-size: 16px; align-items: center; }
+        .leaderboard-item:nth-child(1) { font-weight: bold; color: #f59e0b; background-color: var(--rank1-bg); border-radius: 8px; }
+        .leaderboard-item:nth-child(2) { font-weight: bold; color: #94a3b8; background-color: var(--rank2-bg); border-radius: 8px; }
+        .leaderboard-item:nth-child(3) { font-weight: bold; color: #b45309; background-color: var(--rank3-bg); border-radius: 8px; }
+        .tag { font-size: 12px; background: var(--btn-bg); padding: 2px 6px; border-radius: 4px; color: var(--text-sub); margin-left: 8px; font-weight: normal; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <button id="theme-toggle-btn" class="theme-btn" onclick="toggleTheme()">🌙 다크 모드</button>
+
+    <div id="home-screen" class="screen active">
+        <h1>🧠 상식의 달인</h1>
+        <p style="margin-bottom: 20px; color: var(--text-sub); text-align: center;">도전할 퀴즈 분야를 선택하세요!</p>
+        
+        <div class="category-grid">
+            <button class="btn btn-primary" onclick="startGame('한국사')">🇰🇷 한국사</button>
+            <button class="btn btn-primary" onclick="startGame('과학')">🔬 과 학</button>
+            <button class="btn btn-primary" onclick="startGame('지리')">🌍 지 리</button>
+            <button class="btn btn-primary" onclick="startGame('일반상식')">💡 일반상식</button>
+        </div>
+        
+        <button class="btn" style="background-color: var(--btn-primary-hover); color: white;" onclick="startGame('전체')">🔥 전체 풀기 (40문제)</button>
+        <button class="btn" style="margin-top: 10px;" onclick="showLeaderboardScreen()">🏆 리더보드 보기</button>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+        <div id="top-bar">
+            <span id="category-label">카테고리</span>
+            <span id="progress-label">1 / 10</span>
+        </div>
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        <div id="question-text">질문 텍스트</div>
+        <div id="options-container" style="width: 100%;">
+            </div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <h1>🎉 게임 종료!</h1>
+        <h2>당신의 최종 점수는?</h2>
+        <div class="score-display"><span id="final-score">0</span>점</div>
+        <p style="margin-bottom: 30px; color: var(--text-sub);">총 <span id="total-question-count">10</span>문제 중 <span id="correct-count">0</span>문제를 맞혔습니다.</p>
+        
+        <input type="text" id="nickname-input" placeholder="닉네임을 입력하세요" maxlength="10">
+        <button class="btn btn-primary" onclick="saveScore()">랭킹 등록하기</button>
+    </div>
+
+    <div id="leaderboard-screen" class="screen">
+        <h1>🏆 명예의 전당</h1>
+        <ul id="leaderboard-list" class="leaderboard-list">
+            </ul>
+        <button class="btn btn-primary" onclick="resetGame()">처음으로 돌아가기</button>
+    </div>
+</div>
+
+<script>
+    // --- 0. 다크모드/라이트모드 설정 로직 ---
+    function initTheme() {
+        const savedTheme = localStorage.getItem('triviaTheme');
+        const btn = document.getElementById('theme-toggle-btn');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            btn.innerText = '☀️ 라이트 모드';
+        } else {
+            document.body.classList.remove('dark-mode');
+            btn.innerText = '🌙 다크 모드';
+        }
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const btn = document.getElementById('theme-toggle-btn');
+        body.classList.toggle('dark-mode');
+        
+        const isDark = body.classList.contains('dark-mode');
+        localStorage.setItem('triviaTheme', isDark ? 'dark' : 'light');
+        btn.innerText = isDark ? '☀️ 라이트 모드' : '🌙 다크 모드';
+    }
+
+    // 페이지 로드 시 테마 초기화
+    window.onload = initTheme;
+
+    // --- 1. 총 40문제 데이터 ---
+    const allQuizData = [
+        // [🇰🇷 한국사 10문제]
+        { category: '한국사', question: '조선을 건국한 태조의 이름은?', options: ['이방원', '이성계', '이도', '이순신'], answer: 1 },
+        { category: '한국사', question: '한글을 창제한 조선의 제4대 왕은?', options: ['태종', '세조', '세종대왕', '정조'], answer: 2 },
+        { category: '한국사', question: '임진왜란 중 한산도 대첩을 승리로 이끈 장군은?', options: ['강감찬', '을지문덕', '계백', '이순신'], answer: 3 },
+        { category: '한국사', question: '고구려를 건국한 인물은?', options: ['주몽', '온조', '박혁거세', '김수로'], answer: 0 },
+        { category: '한국사', question: '백제의 전성기를 이끌며 영토를 크게 넓힌 4세기 왕은?', options: ['고이왕', '무령왕', '근초고왕', '의자왕'], answer: 2 },
+        { category: '한국사', question: '신라의 삼국통일을 완성한 왕은?', options: ['진흥왕', '문무왕', '태종 무열왕', '선덕여왕'], answer: 1 },
+        { category: '한국사', question: '후삼국을 통일하고 고려를 건국한 왕은?', options: ['왕건', '궁예', '견훤', '광종'], answer: 0 },
+        { category: '한국사', question: '일제강점기 3.1 운동이 일어난 연도는?', options: ['1910년', '1915년', '1919년', '1945년'], answer: 2 },
+        { category: '한국사', question: '안중근 의사가 이토 히로부미를 저격한 장소는?', options: ['상하이', '도쿄', '하얼빈', '블라디보스토크'], answer: 2 },
+        { category: '한국사', question: '대한민국 임시정부의 초대 대통령은?', options: ['이승만', '김구', '안창호', '신채호'], answer: 0 },
+
+        // [🔬 과학 10문제]
+        { category: '과학', question: '가장 가벼운 원소로, 원자번호 1번인 이것은?', options: ['산소', '탄소', '질소', '수소'], answer: 3 },
+        { category: '과학', question: '1기압에서 물이 끓는 온도는 섭씨 몇 도인가?', options: ['50도', '80도', '100도', '120도'], answer: 2 },
+        { category: '과학', question: '태양계에서 가장 크기가 큰 행성은?', options: ['지구', '목성', '토성', '화성'], answer: 1 },
+        { category: '과학', question: '빛은 1초에 약 몇 만 km를 이동하는가?', options: ['30만 km', '10만 km', '50만 km', '100만 km'], answer: 0 },
+        { category: '과학', question: '지구의 자전 주기는 대략 얼마인가?', options: ['약 12시간', '약 24시간', '약 30일', '약 365일'], answer: 1 },
+        { category: '과학', question: '물을 이루는 원소 기호는?', options: ['CO2', 'O2', 'NaCl', 'H2O'], answer: 3 },
+        { category: '과학', question: '생물 분류의 가장 기본이 되는 단위는?', options: ['종(Species)', '속(Genus)', '과(Family)', '목(Order)'], answer: 0 },
+        { category: '과학', question: '식물의 광합성에 반드시 필요한 기체는?', options: ['산소', '이산화탄소', '질소', '헬륨'], answer: 1 },
+        { category: '과학', question: '사과가 나무에서 떨어지는 것을 보고 만유인력의 법칙을 발견한 과학자는?', options: ['아인슈타인', '에디슨', '뉴턴', '갈릴레이'], answer: 2 },
+        { category: '과학', question: '성인 기준 사람 몸의 뼈는 대략 몇 개인가?', options: ['약 100개', '약 206개', '약 300개', '약 400개'], answer: 1 },
+
+        // [🌍 지리 10문제]
+        { category: '지리', question: '대한민국 영토 내에서 가장 높은 산은?', options: ['지리산', '설악산', '한라산', '백두산'], answer: 2 },
+        { category: '지리', question: '지구상에서 가장 넓은 면적을 차지하는 대양은?', options: ['태평양', '대서양', '인도양', '북극해'], answer: 0 },
+        { category: '지리', question: '세계에서 영토가 가장 넓은 나라는?', options: ['미국', '러시아', '중국', '캐나다'], answer: 1 },
+        { category: '지리', question: '미국의 수도는?', options: ['뉴욕', '로스앤젤레스', '시카고', '워싱턴 D.C.'], answer: 3 },
+        { category: '지리', question: '아프리카 대륙에서 가장 긴 강은?', options: ['나일강', '아마존강', '미시시피강', '갠지스강'], answer: 0 },
+        { category: '지리', question: '대한민국에서 가장 큰 섬은?', options: ['거제도', '울릉도', '제주도', '강화도'], answer: 2 },
+        { category: '지리', question: '2024년 기준 세계에서 인구가 가장 많은 국가는?', options: ['중국', '인도', '미국', '인도네시아'], answer: 1 },
+        { category: '지리', question: '호주(오스트레일리아)의 수도는?', options: ['시드니', '멜버른', '브리즈번', '캔버라'], answer: 3 },
+        { category: '지리', question: '유럽과 아시아 대륙을 나누는 기준이 되는 산맥은?', options: ['우랄 산맥', '안데스 산맥', '알프스 산맥', '히말라야 산맥'], answer: 0 },
+        { category: '지리', question: '적도(Equator)가 지나가지 않는 대륙은?', options: ['아프리카', '남아메리카', '유럽', '아시아(인도네시아 등)'], answer: 2 },
+
+        // [💡 일반상식 10문제]
+        { category: '일반상식', question: '국제연합(UN)의 본부가 위치한 도시는?', options: ['워싱턴 D.C.', '뉴욕', '제네바', '런던'], answer: 1 },
+        { category: '일반상식', question: '올림픽의 상징인 오륜기의 고리 개수는?', options: ['4개', '5개', '6개', '7개'], answer: 1 },
+        { category: '일반상식', question: '대한민국의 국화(나라꽃)는?', options: ['장미', '진달래', '무궁화', '벚꽃'], answer: 2 },
+        { category: '일반상식', question: '1년 24절기 중 밤이 가장 긴 날은?', options: ['동지', '하지', '춘분', '추분'], answer: 0 },
+        { category: '일반상식', question: '셰익스피어의 4대 비극이 아닌 것은?', options: ['햄릿', '오셀로', '리어왕', '로미오와 줄리엣'], answer: 3 },
+        { category: '일반상식', question: '경제학에서 수요와 공급이 만나는 지점에서 결정되는 것은?', options: ['가격', '이율', '세금', '환율'], answer: 0 },
+        { category: '일반상식', question: '인터넷 도메인 주소에서 국가코드 \'kr\'이 의미하는 나라는?', options: ['케냐', '대한민국', '쿠웨이트', '크로아티아'], answer: 1 },
+        { category: '일반상식', question: '우리나라 지폐 5만 원권에 그려진 인물은?', options: ['세종대왕', '이이', '이황', '신사임당'], answer: 3 },
+        { category: '일반상식', question: '컴퓨터의 두뇌 역할을 하는 중앙처리장치의 약자는?', options: ['RAM', 'CPU', 'SSD', 'GPU'], answer: 1 },
+        { category: '일반상식', question: '무지개의 7가지 색깔 중 가장 바깥쪽(위쪽)에 위치한 색은?', options: ['빨간색', '초록색', '파란색', '보라색'], answer: 0 }
+    ];
+
+    // --- 2. 상태 관리 변수 ---
+    let currentQuizList = [];
+    let currentCategoryName = '';
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let correctAnswers = 0;
+    let totalQuestions = 0;
+    const SCORE_PER_QUESTION = 10;
+    let isClickable = true;
+
+    // --- 3. 핵심 로직 함수 ---
+    function switchScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function startGame(category) {
+        if (category === '전체') {
+            currentQuizList = [...allQuizData];
+            currentCategoryName = '종합';
+        } else {
+            currentQuizList = allQuizData.filter(q => q.category === category);
+            currentCategoryName = category;
+        }
+
+        totalQuestions = currentQuizList.length;
+        currentQuestionIndex = 0;
+        score = 0;
+        correctAnswers = 0;
+        
+        switchScreen('quiz-screen');
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        isClickable = true;
+        const currentQuiz = currentQuizList[currentQuestionIndex];
+        
+        document.getElementById('category-label').innerText = currentQuiz.category;
+        document.getElementById('progress-label').innerText = `${currentQuestionIndex + 1} / ${totalQuestions}`;
+        
+        const progressPercent = ((currentQuestionIndex) / totalQuestions) * 100;
+        document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+        
+        document.getElementById('question-text').innerText = currentQuiz.question;
+        
+        const optionsContainer = document.getElementById('options-container');
+        optionsContainer.innerHTML = '';
+        
+        currentQuiz.options.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.classList.add('btn', 'option-btn');
+            button.innerText = option;
+            button.onclick = () => checkAnswer(index, button);
+            optionsContainer.appendChild(button);
+        });
+    }
+
+    function checkAnswer(selectedIndex, buttonElement) {
+        if (!isClickable) return;
+        isClickable = false;
+
+        const currentQuiz = currentQuizList[currentQuestionIndex];
+        const allButtons = document.querySelectorAll('.option-btn');
+        
+        if (selectedIndex === currentQuiz.answer) {
+            buttonElement.classList.add('correct');
+            score += SCORE_PER_QUESTION;
+            correctAnswers++;
+        } else {
+            buttonElement.classList.add('incorrect');
+            allButtons[currentQuiz.answer].classList.add('correct');
+        }
+
+        allButtons.forEach(btn => btn.disabled = true);
+
+        setTimeout(() => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < totalQuestions) {
+                loadQuestion();
+            } else {
+                endGame();
+            }
+        }, 1200); 
+    }
+
+    function endGame() {
+        document.getElementById('progress-bar').style.width = '100%';
+        switchScreen('result-screen');
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('correct-count').innerText = correctAnswers;
+        document.getElementById('total-question-count').innerText = totalQuestions;
+        document.getElementById('nickname-input').value = '';
+    }
+
+    // --- 4. 리더보드 로직 ---
+    function saveScore() {
+        const nickname = document.getElementById('nickname-input').value.trim();
+        if (!nickname) {
+            alert('닉네임을 1자 이상 입력해 주세요!');
+            return;
+        }
+
+        let leaderboard = JSON.parse(localStorage.getItem('triviaLeaderboard_v3')) || [];
+        
+        leaderboard.push({ 
+            name: nickname, 
+            score: score, 
+            category: currentCategoryName,
+            total: totalQuestions * SCORE_PER_QUESTION
+        });
+        
+        leaderboard.sort((a, b) => b.score - a.score || b.total - a.total);
+        leaderboard = leaderboard.slice(0, 10);
+        
+        localStorage.setItem('triviaLeaderboard_v3', JSON.stringify(leaderboard));
+        showLeaderboardScreen();
+    }
+
+    function showLeaderboardScreen() {
+        switchScreen('leaderboard-screen');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        leaderboardList.innerHTML = '';
+
+        const leaderboard = JSON.parse(localStorage.getItem('triviaLeaderboard_v3')) || [];
+        
+        if (leaderboard.length === 0) {
+            leaderboardList.innerHTML = '<li class="leaderboard-item" style="justify-content: center; color: var(--text-sub);">아직 등록된 기록이 없습니다.</li>';
+            return;
+        }
+
+        leaderboard.forEach((entry, index) => {
+            const li = document.createElement('li');
+            li.classList.add('leaderboard-item');
+            li.innerHTML = `
+                <div>
+                    <span>${index + 1}위. ${entry.name}</span>
+                    <span class="tag">${entry.category}</span>
+                </div>
+                <span>${entry.score}점</span>
+            `;
+            leaderboardList.appendChild(li);
+        });
+    }
+
+    function resetGame() {
+        switchScreen('home-screen');
+    }
+</script>
+
+</body>
+</html>
